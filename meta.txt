@@ -17,3 +17,5 @@ counter:കൌണ്ടർ
 lost:നഷ്ടപ്പെട്ടു
 book:പുസ്തകം
 sun:സൂര്യൻ
+river:നദി
+crayon:ചായം

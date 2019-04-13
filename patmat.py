@@ -44,13 +44,13 @@ def SenToPhrase (tagged_sentence):
 #===================== M A I N == P R O G R A M =========================#
 
 #get the mapped data from the file
-data = list(csv.reader(open('mappings.csv', 'r', encoding="utf8"), delimiter='\t'))
+data = list(csv.reader(open('train_text.csv', 'r', encoding="utf8"), delimiter='\t'))
 
 #get all english-malayalam translations from meta.txt
 dictionary = [line.rstrip('\n') for line in open('meta.txt', encoding="utf8")]
 
 #get all preposition translations and rules from meta.txt
-prep_rules = [line.rstrip('\n') for line in open('prepositions.txt', encoding="utf8")]
+mal_prepositions = [line.rstrip('\n') for line in open('prepositions.txt', encoding="utf8")]
 
 #english word
 #print(dictionary[0][:dictionary[0].find(":")])
@@ -62,7 +62,7 @@ for i in range (len(data)):
 
 	#running for only one case while developing
 	#comment the following two lines in production
-	if(i>5):
+	if(i>10):
 		break
 
 	#if there no malayalam mapping, then ignore that sentence and move on to the next one
@@ -73,10 +73,15 @@ for i in range (len(data)):
 	eng_sen = data[i][0][:-1]
 	print ("\n\nSentence is ---> ",eng_sen)
 
+	'''
 	#printing malayalm mappings
 	for j in range (len(data[i])-1):
-		print ("\nMalayalam mapping ",j,"->",data[i][j+1])
-
+		print ("\nMalayalam mapping ",j+1,"->",data[i][j+1])
+	'''
+	#initialise score list for each mapping
+	score=[]
+	for j in range (len(data[i])-1):
+		score.append(0)
 	
 	#POS tag the english sentence
 	#create postagger entity
@@ -102,7 +107,7 @@ for i in range (len(data)):
 		noun=""
 		mal_noun=""
 		preposition=""
-		prep_rule=""
+		mal_prep=""
 		for k in range (len(focus)):
 			if(focus[k][1] in ["NN","NNP","NNPS","NNS"]):
 				noun = focus[k][0]
@@ -119,11 +124,41 @@ for i in range (len(data)):
 			print("The translation is -->",mal_noun)
 
 			print ("The proposition is ", preposition)
-			for l in range (len(prep_rules)):
-				if(prep_rules[l][:prep_rules[l].find(":")] == preposition):
-					prep_rule = prep_rules[l][prep_rules[l].find(":")+1:]
-			print ("The proposition rule is ", prep_rule[0],"*", prep_rule[1],"*", prep_rule[2],"*")
-					
+			for l in range (len(mal_prepositions)):
+				if(mal_prepositions[l][:mal_prepositions[l].find(":")] == preposition):
+					mal_prep = mal_prepositions[l][mal_prepositions[l].find(":")+1:].split('|')[:-1]
+			print ("The malayalam preposition is ", mal_prep)
+			
+
+			#now search for mal_prep in the malayalam mappings
+			
+			for l in range (len(data[i])-1):
+				#print ("\nChecking malayalam mapping ",l+1," ",data[i][l+1])
+				for m in range (len(mal_prep)):
+					#check if mal_prep[m] contains "[" indicating ommitable parts
+					if("[" in mal_prep[m]):
+						#remove just the the square brakets and search
+						temp = mal_prep[m].replace("[","").replace("]","")
+						if temp in data[i][l+1]:
+							print (">>>>> Malayalam mapping ",l+1," ",data[i][l+1]," contains ",temp)
+							score[l] = score[l]+1
+						else:
+							#remove the stuff in square brakets and search
+							temp = mal_prep[m][:mal_prep[m].find("[")]+mal_prep[m][mal_prep[m].find("]")+1:]
+							if temp in data[i][l+1]:
+								print (">>>>> Malayalam mapping ",l+1," ",data[i][l+1]," contains ",temp)
+								score[l] = score[l]+1
+
+					else: 
+						if mal_prep[m] in data[i][l+1]:
+							print (">>>>> Malayalam mapping ",l+1," ",data[i][l+1]," contains ",mal_prep[m])
+							score[l] = score[l]+1
+			#print ("score list ->",score)
+
+			#the mapping with highest score is the correct one
+			#display the mapping, yaay!
+			print("\n\n",eng_sen," <==> ",data[i][score.index(max(score))+1])
+
 		else:
 			print("This phrase contains no nouns :(")
 
